@@ -47,7 +47,7 @@ Schema |            Name            |   Type   |  Owner
 ````
 
 ## 2. Tablas principales, atributos y algunos registros. ```SELECT * FROM table_name;```
-### Actor (actor)
+### Actor (actor) HOLA
 ````
  actor_id | first_name  |  last_name   |      last_update       
 ----------+-------------+--------------+------------------------
