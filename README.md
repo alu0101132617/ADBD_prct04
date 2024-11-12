@@ -1,7 +1,9 @@
 # Práctica 4. Modelo Relacional. Vistas y disparadores Tarea
 ### Autores: Alba Morales Martín y Ruyman 
 
-## 1. Tablas, vistas y secuencias
+# 1. Restauración de la base de datos ```AlquilerPractica.tar```, con: ```pg_restore -d db_prct04 -U postgres -h localhost -p 5432 AlquilerPractica.tar```
+
+## 2. Tablas, vistas y secuencias
 * Listado de **tablas** ```\dt```:
 ````
              List of relations
@@ -46,7 +48,7 @@ Schema |            Name            |   Type   |  Owner
  public | store_store_id_seq         | sequence | postgres
 ````
 
-## 2. Tablas principales, atributos (campos) y algunas características ```\d table_name```
+## 3. Tablas principales, atributos (campos) y algunas características: claves (primarias) y ajenas```\d table_name```
 ### Actor (actor)
 ````
    Column    |            Type             | Collation | Nullable |                 Default                 
@@ -72,31 +74,6 @@ Indexes:
     "category_pkey" PRIMARY KEY, btree (category_id)
 Referenced by:
     TABLE "film_category" CONSTRAINT "film_category_category_id_fkey" FOREIGN KEY (category_id) REFERENCES category(category_id) ON UPDATE CASCADE ON DELETE RESTRICT
-````
-### Cliente (Customer)
-````
-    Column    |            Type             | Collation | Nullable |                    Default                    
--------------+-----------------------------+-----------+----------+-----------------------------------------------
- customer_id | integer                     |           | not null | nextval('customer_customer_id_seq'::regclass)
- store_id    | smallint                    |           | not null | 
- first_name  | character varying(45)       |           | not null | 
- last_name   | character varying(45)       |           | not null | 
- email       | character varying(50)       |           |          | 
- address_id  | smallint                    |           | not null | 
- activebool  | boolean                     |           | not null | true
- create_date | date                        |           | not null | 'now'::text::date
- last_update | timestamp without time zone |           |          | now()
- active      | integer                     |           |          | 
-Indexes:
-    "customer_pkey" PRIMARY KEY, btree (customer_id)
-    "idx_fk_address_id" btree (address_id)
-    "idx_fk_store_id" btree (store_id)
-    "idx_last_name" btree (last_name)
-Foreign-key constraints:
-    "customer_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
-Referenced by:
-    TABLE "payment" CONSTRAINT "payment_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON UPDATE CASCADE ON DELETE RESTRICT
-    TABLE "rental" CONSTRAINT "rental_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ````
 ### Película (film)
 ````                         
@@ -127,6 +104,18 @@ Referenced by:
     TABLE "film_category" CONSTRAINT "film_category_film_id_fkey" FOREIGN KEY (film_id) REFERENCES film(film_id) ON UPDATE CASCADE ON DELETE RESTRICT
     TABLE "inventory" CONSTRAINT "inventory_film_id_fkey" FOREIGN KEY (film_id) REFERENCES film(film_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ````
+### Lengua (language)
+````
+   Column    |            Type             | Collation | Nullable |                    Default                    
+-------------+-----------------------------+-----------+----------+-----------------------------------------------
+ language_id | integer                     |           | not null | nextval('language_language_id_seq'::regclass)
+ name        | character(20)               |           | not null | 
+ last_update | timestamp without time zone |           | not null | now()
+Indexes:
+    "language_pkey" PRIMARY KEY, btree (language_id)
+Referenced by:
+    TABLE "film" CONSTRAINT "film_language_id_fkey" FOREIGN KEY (language_id) REFERENCES language(language_id) ON UPDATE CASCADE ON DELETE RESTRICT
+````
 ### Inventario (inventory)
 ````
     Column    |            Type             | Collation | Nullable |                     Default                     
@@ -143,6 +132,7 @@ Foreign-key constraints:
 Referenced by:
     TABLE "rental" CONSTRAINT "rental_inventory_id_fkey" FOREIGN KEY (inventory_id) REFERENCES inventory(inventory_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ````
+
 ### Pago (payment)
 ````
    Column    |            Type             | Collation | Nullable |                   Default                   
@@ -185,6 +175,33 @@ Foreign-key constraints:
 Referenced by:
     TABLE "payment" CONSTRAINT "payment_rental_id_fkey" FOREIGN KEY (rental_id) REFERENCES rental(rental_id) ON UPDATE CASCADE ON DELETE SET NULL
 ````
+### Cliente (Customer)
+````
+    Column    |            Type             | Collation | Nullable |                    Default                    
+-------------+-----------------------------+-----------+----------+-----------------------------------------------
+ customer_id | integer                     |           | not null | nextval('customer_customer_id_seq'::regclass)
+ store_id    | smallint                    |           | not null | 
+ first_name  | character varying(45)       |           | not null | 
+ last_name   | character varying(45)       |           | not null | 
+ email       | character varying(50)       |           |          | 
+ address_id  | smallint                    |           | not null | 
+ activebool  | boolean                     |           | not null | true
+ create_date | date                        |           | not null | 'now'::text::date
+ last_update | timestamp without time zone |           |          | now()
+ active      | integer                     |           |          | 
+Indexes:
+    "customer_pkey" PRIMARY KEY, btree (customer_id)
+    "idx_fk_address_id" btree (address_id)
+    "idx_fk_store_id" btree (store_id)
+    "idx_last_name" btree (last_name)
+Foreign-key constraints:
+    "customer_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
+Referenced by:
+    TABLE "payment" CONSTRAINT "payment_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    TABLE "rental" CONSTRAINT "rental_customer_id_fkey" FOREIGN KEY (customer_id) REFERENCES customer(customer_id) ON UPDATE CASCADE ON DELETE RESTRICT
+````
+
+
 ### Tienda (store)
 ````
       Column      |            Type             | Collation | Nullable |                 Default                 
@@ -224,6 +241,117 @@ Referenced by:
     TABLE "rental" CONSTRAINT "rental_staff_id_key" FOREIGN KEY (staff_id) REFERENCES staff(staff_id)
     TABLE "store" CONSTRAINT "store_manager_staff_id_fkey" FOREIGN KEY (manager_staff_id) REFERENCES staff(staff_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ````
+### Dirección (Address)
+````
+   Column    |            Type             | Collation | Nullable |                   Default                   
+-------------+-----------------------------+-----------+----------+---------------------------------------------
+ address_id  | integer                     |           | not null | nextval('address_address_id_seq'::regclass)
+ address     | character varying(50)       |           | not null | 
+ address2    | character varying(50)       |           |          | 
+ district    | character varying(20)       |           | not null | 
+ city_id     | smallint                    |           | not null | 
+ postal_code | character varying(10)       |           |          | 
+ phone       | character varying(20)       |           | not null | 
+ last_update | timestamp without time zone |           | not null | now()
+Indexes:
+    "address_pkey" PRIMARY KEY, btree (address_id)
+    "idx_fk_city_id" btree (city_id)
+Foreign-key constraints:
+    "fk_address_city" FOREIGN KEY (city_id) REFERENCES city(city_id)
+Referenced by:
+    TABLE "customer" CONSTRAINT "customer_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    TABLE "staff" CONSTRAINT "staff_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
+    TABLE "store" CONSTRAINT "store_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
+````
+## 4. Consultas
+
+## 5. Vistas
+
+## 6. Restricciones CHECK añadidas
+* En la **tabla rental**, asegurar que la fecha de alquiler sea menor o igual a la fecha de devolución.
+````
+ALTER TABLE rental
+ADD CONSTRAINT check_rental_date_before_return_date
+CHECK (rental_date <= return_date);
+````
+* En la **tabla film**, asegurar que, el precio diario por alquilar la película y el costo de reposición por pérdida ó daño, sean mayor a 0 (positivos).
+````
+ALTER TABLE film
+ADD CONSTRAINT check_rental_rate_positive
+CHECK (rental_rate > 0);
+
+ALTER TABLE film
+ADD CONSTRAINT check_replacement_cost_positive
+CHECK (replacement_cost > 0);
+````
+* En la **tabla film**, asegurar que el tiempo de alquiler tenga un tiempo máximo. 
+````
+ALTER TABLE film
+ADD CONSTRAINT check_rental_duration
+CHECK (rental_duration > 0 AND rental_duration <= 30);
+````
+* En la **tabla payment**, asegurar que el pago no se realiza en una fecha inválida.
+````
+ALTER TABLE payment
+ADD CONSTRAINT check_payment_date_not_in_future
+CHECK (payment_date <= CURRENT_TIMESTAMP);
+````
+* En la **tabla customer**, asegurar que el email tiene un buen formato.
+````
+ALTER TABLE customer
+ADD CONSTRAINT check_email_format 
+CHECK (email IS NULL OR email LIKE '%@%');
+````
+* En la **tabla customer**, asegurar que activebool sólo contiene TRUE o FALSE.
+````
+ALTER TABLE customer
+ADD CONSTRAINT check_activebool_validboolean 
+CHECK (activebool IN (TRUE, FALSE));
+````
+* En la **tabla film** , asegurar que los valores de rating se encuentren en un dominio predefinido.
+````
+ALTER TABLE film
+ADD CONSTRAINT check_valid_rating
+CHECK (rating IN ('G', 'PG', 'PG-13', 'R', 'NC-17'));
+````
+
+## 7. Triggers en customer:
+
+## 8. Disparador que almacena, en una nueva tabla, la fecha de las nuevas inserciones de `film`.
+* Se crea una nueva tabla que contendrá los atributos `film_id` e `insert_date`. Ambos serán clave promaria.
+```
+CREATE TABLE film_inserts_log (
+    film_id INTEGER NOT NULL,
+    insert_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (film_id, insert_date)
+);
+```
+* Se crea la función a la que llamará el trigger. Esta inserta un nuevo resgistro en la tabla `film_inserts_log` cada vez que es invocada.
+````
+CREATE OR REPLACE FUNCTION film_insertion()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO film_inserts_log (film_id, insert_date)
+    VALUES (NEW.film_id, CURRENT_TIMESTAMP);
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+````
+* Se crea el disparador que llama a la función `film_insertion()` cada vez que se inserta un nuevo registro en la tabla `film`. 
+````
+CREATE TRIGGER trigger_log_film_insertion
+AFTER INSERT ON film
+FOR EACH ROW
+EXECUTE FUNCTION log_film_insertion();
+````
+
+## 9. Disparador que almacena, en una nueva tabla, la fecha de los registros eliminados de `film`.
+
+## 10. Secuencias
+
+#### * Volcado final: `sudo -u postgres pg_dump -d db_prct04 > db_prct04.sql`
+
 
 
 
