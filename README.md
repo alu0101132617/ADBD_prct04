@@ -1,5 +1,5 @@
 # Práctica 4. Modelo Relacional. Vistas y disparadores Tarea
-### Autores: Alba Morales Martín y Ruyman 
+### Autores: Alba Morales Martín y Ruymán García Martín
 
 # 1. Restauración de la base de datos ```AlquilerPractica.tar```, con: ```pg_restore -d db_prct04 -U postgres -h localhost -p 5432 AlquilerPractica.tar```
 
@@ -31,7 +31,7 @@ Did not find any relations.
 ````
 * Listado de **secuencias** ```\ds```:
 ````
-Schema |            Name            |   Type   |  Owner   
+Schema  |            Name            |   Type   |  Owner   
 --------+----------------------------+----------+----------
  public | actor_actor_id_seq         | sequence | postgres
  public | address_address_id_seq     | sequence | postgres
@@ -135,7 +135,7 @@ Referenced by:
 
 ### Pago (payment)
 ````
-   Column    |            Type             | Collation | Nullable |                   Default                   
+   Column     |            Type             | Collation | Nullable |                   Default                   
 --------------+-----------------------------+-----------+----------+---------------------------------------------
  payment_id   | integer                     |           | not null | nextval('payment_payment_id_seq'::regclass)
  customer_id  | smallint                    |           | not null | 
@@ -155,7 +155,7 @@ Foreign-key constraints:
 ````
 ### Alquiler (rental)
 ````
-   Column    |            Type             | Collation | Nullable |                  Default                  
+   Column     |            Type             | Collation | Nullable |                  Default                  
 --------------+-----------------------------+-----------+----------+-------------------------------------------
  rental_id    | integer                     |           | not null | nextval('rental_rental_id_seq'::regclass)
  rental_date  | timestamp without time zone |           | not null | 
@@ -177,7 +177,7 @@ Referenced by:
 ````
 ### Cliente (Customer)
 ````
-    Column    |            Type             | Collation | Nullable |                    Default                    
+    Column   |            Type            | Collation  | Nullable |                    Default                    
 -------------+-----------------------------+-----------+----------+-----------------------------------------------
  customer_id | integer                     |           | not null | nextval('customer_customer_id_seq'::regclass)
  store_id    | smallint                    |           | not null | 
@@ -264,6 +264,198 @@ Referenced by:
     TABLE "store" CONSTRAINT "store_address_id_fkey" FOREIGN KEY (address_id) REFERENCES address(address_id) ON UPDATE CASCADE ON DELETE RESTRICT
 ````
 ## 4. Consultas
+
+* A continuación crearemos las siguientes consultas que se solicitan:
+
+* ### Obtenga las ventas totales por categoría de películas ordenadas descendentemente.
+````
+SELECT 
+    category.name AS category,
+    COUNT(payment.payment_id) AS total_sales
+FROM 
+    payment
+JOIN 
+    rental 
+	ON payment.rental_id = rental.rental_id
+JOIN 
+    inventory 
+	ON rental.inventory_id = inventory.inventory_id
+JOIN 
+    film_category 
+	ON inventory.film_id = film_category.film_id
+JOIN 
+    category 
+	ON film_category.category_id = category.category_id
+GROUP BY 
+    category.name
+ORDER BY 
+    total_sales DESC;
+````
+
+El resultado por pantalla de la consulta sería el siguiente:
+
+````
+  category   | total_sales 
+-------------+-------------
+ Sports      |        1081
+ Animation   |        1065
+ Action      |        1013
+ Sci-Fi      |         998
+ Family      |         988
+ Foreign     |         953
+ Drama       |         953
+ Documentary |         937
+ Games       |         884
+ New         |         864
+ Children    |         861
+ Classics    |         860
+ Comedy      |         851
+ Horror      |         773
+ Travel      |         765
+ Music       |         750
+
+(16 rows)
+````
+
+* ### Obtenga las ventas totales por tienda, donde se refleje la ciudad, el país (concatenar la ciudad y el país empleando como separador la “,”), y el encargado.
+
+````
+SELECT 
+    store.store_id AS store_id,
+    CONCAT(city.city, ', ', country.country) AS location,
+    CONCAT(manager.first_name, ' ', manager.last_name) AS manager_name,
+    COUNT(payment.payment_id) AS total_sales
+FROM 
+    store
+JOIN 
+    address 
+	ON store.address_id = address.address_id
+JOIN 
+    city 
+	ON address.city_id = city.city_id
+JOIN 
+    country 
+	ON city.country_id = country.country_id
+JOIN 
+    staff AS manager 
+	ON store.manager_staff_id = manager.staff_id
+JOIN 
+    payment 
+	ON payment.staff_id = manager.staff_id
+GROUP BY 
+    store.store_id, location, manager_name
+ORDER BY 
+    total_sales DESC;
+````
+
+El resultado por pantalla de la consulta sería el siguiente:
+
+````
+ store_id |       location       | manager_name | total_sales 
+----------+----------------------+--------------+-------------
+        2 | Woodridge, Australia | Jon Stephens |        7304
+        1 | Lethbridge, Canada   | Mike Hillyer |        7292
+
+(2 rows)
+````
+
+* ### Obtenga una lista de películas, donde se reflejen el identificador, el título, descripción, categoría, el precio, la duración de la película, clasificación, nombre y apellidos de los actores (puede realizar una concatenación de ambos)
+
+````
+SELECT 
+    film.film_id AS film_id,
+    film.title AS title,
+    film.description AS description,
+    category.name AS category,
+    film.rental_rate AS price,
+    film.length AS duration,
+    film.rating AS rating,
+    STRING_AGG(CONCAT(actor.first_name, ' ', actor.last_name), ', ') AS actors
+FROM 
+    film
+JOIN 
+    film_category 
+	ON film.film_id = film_category.film_id
+JOIN 
+    category 
+	ON film_category.category_id = category.category_id
+JOIN 
+    film_actor 
+	ON film.film_id = film_actor.film_id
+JOIN 
+    actor 
+	ON film_actor.actor_id = actor.actor_id
+GROUP BY 
+    film.film_id, category.name
+ORDER BY 
+    film.title;
+````
+
+El resultado por pantalla de la consulta sería el siguiente:
+
+```
+| film_id | Title               | Description                                                                                                           | Category     | Price | Duration | Rating | Actors                                                                                                                                         |
+|---------|---------------------|-----------------------------------------------------------------------------------------------------------------------|--------------|-------|----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1       | Academy Dinosaur    | A Epic Drama of a Feminist And a Mad Scientist who must Battle a Teacher in The Canadian Rockies                      | Documentary  | 0.99  | 86       | PG     | Rock Dukakis, Mary Keitel, Johnny Cage, Penelope Guiness, Sandra Peck, Christian Gable, Oprah Kilmer, Warren Nolte, Lucille Tracy, Mena Temple |
+| 2       | Ace Goldfinger      | A Astounding Epistle of a Database Administrator And a Explorer who must Find a Car in Ancient China                  | Horror       | 4.99  | 48       | G      | Minnie Zellweger, Chris Depp, Bob Fawcett, Sean Guiness                                                                                        |
+| 3       | Adaptation Holes    | A Astounding Reflection of a Lumberjack And a Car who must Sink a Lumberjack in A Baloon Factory                      | Documentary  | 2.99  | 50       | NC-17  | Cameron Streep, Bob Fawcett, Nick Wahlberg, Ray Johansson, Julianne Dench                                                                      |
+| 4       | Affair Prejudice    | A Fanciful Documentary of a Frisbee And a Lumberjack who must Chase a Monkey in A Shark Tank                          | Horror       | 2.99  | 117      | G      | Jodie Degeneres, Kenneth Pesci, Fay Winslet, Oprah Kilmer, Scarlett Damon                                                                      |
+| 5       | African Egg         | A Fast-Paced Documentary of a Pastry Chef And a Dentist who must Pursue a Forensic Psychologist in The Gulf of Mexico | Family       | 2.99  | 130      | G      | Dustin Tautou, Matthew Leigh, Gary Phoenix, Matthew Carrey, Thora Temple                                                                       |
+| 6       | Agent Truman        | A Intrepid Panorama of a Robot And a Boy who must Escape a Sumo Wrestler in Ancient China                             | Foreign      | 2.99  | 169      | PG     | Warren Nolte, Sandra Kilmer, Jayne Neeson, Morgan Williams, Kirsten Paltrow, Kenneth Hoffman, Reese West                                       |
+| 7       | Airplane Sierra     | A Touching Saga of a Hunter And a Butler who must Discover a Butler in A Jet Boat                                     | Comedy       | 4.99  | 62       | PG-13  | Mena Hopper, Jim Mostel, Michael Bolger, Oprah Kilmer, Richard Penn                                                                            |
+| 8       | Airport Pollock     | A Epic Tale of a Moose And a Girl who must Confront a Monkey in Ancient India                                         | Horror       | 4.99  | 54       | R      | Lucille Dee, Susan Davis, Fay Kilmer, Gene Willis                                                                                              |
+| 9       | Alabama Devil       | A Thoughtful Panorama of a Database Administrator And a Mad Scientist who must Outgun a Mad Scientist in A Jet Boat   | Horror       | 2.99  | 114      | PG-13  | William Hackman, Rip Crawford, Rip Winslet, Greta Keitel, Christian Gable, Mena Temple, Meryl Allen, Warren Nolte, Elvis Marx                  |
+| 10      | Aladdin Calendar    | A Action-Packed Tale of a Man And a Lumberjack who must Reach a Feminist in Ancient China                             | Sports       | 4.99  | 63       | NC-17  | Greta Malden, Rock Dukakis, Ray Johansson, Renee Tracy, Val Bolger, Judy Dean, Jada Ryder, Alec Wayne                                          |
+
+```
+
+* ### Obtenga la información de los actores, donde se incluya sus nombres y apellidos, las categorías y sus películas. Los actores deben de estar agrupados y, las categorías y las películas deben estar concatenados por “:” 
+
+````
+SELECT 
+    actor.actor_id,
+    CONCAT(actor.first_name, ' ', actor.last_name) AS actor_name,
+    STRING_AGG(category.name || ': ' || film.title, ', ') AS category_films
+FROM 
+    actor
+JOIN 
+    film_actor 
+	ON actor.actor_id = film_actor.actor_id
+JOIN 
+    film 
+	ON film_actor.film_id = film.film_id
+JOIN 
+    film_category 
+	ON film.film_id = film_category.film_id
+JOIN 
+    category 
+	ON film_category.category_id = category.category_id
+GROUP BY 
+    actor.actor_id, actor.first_name, actor.last_name
+ORDER BY 
+    actor_name;
+
+````
+
+El resultado por pantalla de la consulta sería el siguiente:
+
+````
+
+| actor_id | actor_name         | category_films                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|----------|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 71       | Adam Grant         | Sci-Fi: Annie Identity, Foreign: Ballroom Mockingbird, Travel: Disciple Mother, Comedy: Fireball Philadelphia, Family: Gladiator Westward, Games: Glory Tracy, Comedy: Groundhog Uncut, Foreign: Happiness United, Children: Idols Snatchers, Sports: Loser Hustler, Games: Mars Roman, Action: Midnight Westward, Comedy: Operation Operation, Sports: Seabiscuit Punk, Children: Splendor Patton, Classics: Tadpole Park, Children: Twisted Pirates, Games: Wanda Chamber                                                                                                           |
+| 132      | Adam Hopper        | Sci-Fi: Blindness Gun, Family: Blood Argonauts, Music: Chamber Italian, Documentary: Clerks Angels, Action: Clueless Bucket, Foreign: Fiction Christmas, Family: Gables Metropolis, Family: Grease Youth, Comedy: Heaven Freedom, New: Loverboy Attacks, Music: Masked Bubble, Action: Mockingbird Hollywood, Children: Noon Papi, Sci-Fi: Open African, Documentary: Princess Giant, Comedy: Saddle Antitrust, New: Sleepy Japanese, Drama: Torque Bound, Classics: Towers Hurricane, Horror: Train Bunch, Sci-Fi: Vacation Boondock, Music: Words Hunter |
+| 165      | Al Garland         | Documentary: Bill Others, New: Breakfast Goldfinger, Drama: Chitty Lock, Drama: Dalmations Sweden, Action: Drifter Commandments, Travel: Enough Raging, Action: Glass Dying, Action: Grail Frankenstein, Action: Handicap Boondock, Foreign: Holiday Games, Family: House Dynamite, Drama: Jacket Frisco, Foreign: Muppet Mile, Animation: Oscar Gold, Action: Park Citizen, Animation: Potter Connecticut, Horror: Rock Instinct, Sports: Sense Greek, Sci-Fi: Silverado Goldfinger, Games: Sleuth Orient, Sports: Slipper Fidelity, Family: Splash Gump, Children: Splendor Patton, Foreign: Vision Torque, New: Voice Peach, Classics: Wasteland Divine |
+| 173      | Alan Dreyfuss      | Sci-Fi: Badman Dawn, Sci-Fi: Barbarella Streetcar, Music: Birch Antitrust, Family: Blanket Beverly, Games: Bulworth Commandments, Animation: Clash Freddy, Action: Clueless Bucket, Comedy: Crazy Home, Sci-Fi: Divide Monster, Horror: Fidelity Devil, Drama: Greedy Roots, Travel: Haunted Antitrust, Children: Jumping Wrath, Travel: Kick Savannah, Comedy: Lonely Elephant, Family: Maguire Apache, Animation: Massage Image, Documentary: Metal Armageddon, Music: Monster Spartacus, Children: Polish Brooklyn, Family: Rush Goodfellas, Documentary: Sagebrush Clueless, Children: Strangelove Desire, Comedy: Strictly Scarface, Music: Uncut Suicides, Children: Uptown Young, New: Vampire Whale |
+| 146      | Albert Johansson   | Music: Alaska Phantom, Foreign: Alley Evolution, Drama: Apollo Teen, Games: Candles Grapes, Sci-Fi: Connecticut Tramp, Children: Crooked Frogmen, Sports: Crusade Honey, Foreign: Dangerous Uptown, Drama: Deceiver Betrayed, Music: Elf Murder, Sci-Fi: Express Lonely, Animation: Fight Jawbreaker, New: Flamingos Connecticut, Sports: Graceland Dynamite, Music: Grosse Wonderful, Animation: Harper Dying, Comedy: Heaven Freedom, Documentary: Homeward Cider, Sports: Honey Ties, Classics: League Hellfighters, Drama: Lebowski Soldiers, Documentary: Metal Armageddon, Games: Monsoon Cause, New: Redemption Comforts, Classics: Right Cranes, Documentary: Road Roxanne, Comedy: Sweden Shining, Horror: Treasure Command, Horror: Undefeated Dalmations, Documentary: Virginian Pluto, Children: Walls Artist, Documentary: Wedding Apollo, Drama: West Lion |
+| 125      | Albert Nolte       | Documentary: Bed Highball, Drama: Bright Encounters, Foreign: Brooklyn Desert, Sci-Fi: Camelot Vacation, Family: Confused Candles, Comedy: Crazy Home, Drama: Dalmations Sweden, Children: Doctor Grail, Action: Dragon Squad, Comedy: Flintstones Happiness, Sci-Fi: Frisco Forrest, Sports: Gleaming Jawbreaker, Sci-Fi: Goldmine Tycoon, Action: Handicap Boondock, Foreign: Hellfighters Sierra, Family: Homicide Peach, Sports: Honey Ties, Children: Idols Snatchers, Documentary: Kill Brotherhood, Family: Manchurian Curtain, Comedy: Memento Zoolander, Foreign: Mixed Doors, Sci-Fi: Mourning Purple, Foreign: Newton Labyrinth, Action: Patriot Roman, Drama: Pity Bound, Family: Rage Games, Music: Taxi Kick, Foreign: Trap Guys, Games: Volcano Texas, Horror: Watership Frontier |
+| 29       | Alec Wayne         | Sports: Aladdin Calendar, Drama: Blade Polish, Action: Bull Shawshank, Children: Cabin Flash, Classics: Center Dinosaur, Music: Chamber Italian, Drama: Coneheads Smoochy, New: Destiny Saturday, Family: Effect Gladiator, Drama: Encounters Curtain, Sci-Fi: Express Lonely, Foreign: Fiction Christmas, Comedy: Freedom Cleopatra, Travel: Fugitive Maguire, New: Hours Rage, Comedy: Hustler Party, Sci-Fi: Identity Lover, Music: Insider Arizona, Classics: Jeopardy Encino, Sports: Joon Northwest, Sports: Liberty Magnificent, Children: Magic Mallrats, New: Money Harold, Games: Outbreak Divine, Sci-Fi: Reign Gentlemen, Documentary: Smoking Barbarella, Classics: Summer Scarface, Children: Uptown Young, Drama: Virgin Daisy |
+| 65       | Angela Hudson      | Sci-Fi: Armageddon Lost, Games: Autumn Crow, Action: Bride Intrigue, Games: Bulworth Commandments, Games: Candles Grapes, Travel: Cassidy Wyoming, Music: Clones Pinocchio, Comedy: Element Freddy, New: Fatal Haunted, Sci-Fi: Frisco Forrest, Travel: Games Bowfinger, Action: Gosford Donnie, Music: Hanover Galaxy, Classics: Island Exorcist, Horror: Japanese Run, Family: Jason Trap, Children: Jumping Wrath, Travel: Kick Savannah, Music: Legend Jedi, Sports: Lesson Cleopatra, Animation: Luke Mummy, Games: Maltese Hope, Documentary: Metal Armageddon, Sports: Mile Mulan, Animation: Nash Chocolat, Horror: Paris Weekend, Drama: Pity Bound, Classics: Prejudice Oleander, Sci-Fi: Random Go, Children: Robbers Joon, Children: Strangelove Desire, Comedy: Velvet Terminator, Classics: Voyage Legally, Horror: Watership Frontier |
+| 144      | Angela Witherspoon | Animation: Alter Victory, Action: Berets Agent, Drama: Blade Polish, New: Boulevard Mob, Comedy: Bringing Hysterical, Action: Bull Shawshank, Travel: Casablanca Super, Travel: Cassidy Wyoming, Comedy: Cat Coneheads, Action: Celebrity Horn, Sports: Chance Resurrection, Documentary: Coast Rainbow, Classics: Core Suit, New: Day Unfaithful, Classics: Detective Vision, Sports: Dude Blindness, Drama: Edge Kissing, Sports: Evolution Alter, Sports: Exorcist Sting, Sci-Fi: Fiddler Lost, Documentary: Halloween Nuts, Drama: Hanging Deep, Drama: Jacket Frisco, Drama: Kwai Homeward, Music: Lucky Flying, Sports: Mother Oleander, Sports: Peak Forever, Horror: Pulp Beverly, Family: Rush Goodfellas, Games: Sassy Packer, Documentary: Secret Groundhog, Travel: Shawshank Bubble, Foreign: Stepmom Dream, Travel: Tomatoes Hellfighters, Animation: Wait Cider |
+| 76       | Angelina Astaire   | Classics: Beast Hunchback, Children: Beneath Rush, Children: Betrayed Rear, New: Breakfast Goldfinger, Horror: Carrie Bunch, Sports: Cranes Reservoir, Animation: Desire Alien, Sci-Fi: Disturbing Scarface, New: Dragonfly Strangers, Family: Gandhi Kwai, Comedy: Hustler Party, Animation: Intentions Empire, Sports: Jade Bunch, Family: Killer Innocent, Comedy: Memento Zoolander, Comedy: Mulan Moon, Sports: Mummy Creatures, Travel: Order Betrayed, Travel: Outlaw Hanky, Documentary: Pacific Amistad, Drama: Racer Egg, New: Samurai Lion, Comedy: Saturn Name, Games: Seven Swarm, Action: Story Side, Classics: Summer Scarface, Family: Sunset Racer, Horror: Swarm Gold, Sci-Fi: Trojan Tomorrow, New: Vanished Garden, Drama: Wardrobe Phantom |
+
+
+````
 
 ## 5. Vistas
 
