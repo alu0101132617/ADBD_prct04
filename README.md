@@ -1,7 +1,7 @@
 # Práctica 4. Modelo Relacional. Vistas y disparadores Tarea
 ### Autores: Alba Morales Martín y Ruymán García Martín
 
-# 1. Restauración de la base de datos ```AlquilerPractica.tar```, con: ```pg_restore -d db_prct04 -U postgres -h localhost -p 5432 AlquilerPractica.tar```
+## 1. Restauración de la base de datos ```AlquilerPractica.tar```, con: ```pg_restore -d db_prct04 -U postgres -h localhost -p 5432 AlquilerPractica.tar```
 
 ## 2. Tablas, vistas y secuencias
 * Listado de **tablas** ```\dt```:
@@ -265,7 +265,7 @@ Referenced by:
 ````
 ## 4. Consultas
 
-* A continuación crearemos las siguientes consultas que se solicitan:
+A continuación crearemos las siguientes consultas que se solicitan:
 
 * ### Obtenga las ventas totales por categoría de películas ordenadas descendentemente.
 ````
@@ -634,14 +634,13 @@ ORDER BY
 | 76       | Angelina Astaire   | Classics: Beast Hunchback, Children: Beneath Rush, Children: Betrayed Rear, New: Breakfast Goldfinger, Horror: Carrie Bunch, Sports: Cranes Reservoir, Animation: Desire Alien, Sci-Fi: Disturbing Scarface, New: Dragonfly Strangers, Family: Gandhi Kwai, Comedy: Hustler Party, Animation: Intentions Empire, Sports: Jade Bunch, Family: Killer Innocent, Comedy: Memento Zoolander, Comedy: Mulan Moon, Sports: Mummy Creatures, Travel: Order Betrayed, Travel: Outlaw Hanky, Documentary: Pacific Amistad, Drama: Racer Egg, New: Samurai Lion, Comedy: Saturn Name, Games: Seven Swarm, Action: Story Side, Classics: Summer Scarface, Family: Sunset Racer, Horror: Swarm Gold, Sci-Fi: Trojan Tomorrow, New: Vanished Garden, Drama: Wardrobe Phantom |
 ````
 
-* Una vez creadas todas las vistas comprobamos si se han creado correctamente ejcutando el comando:
+Una vez creadas todas las vistas comprobamos si se han creado correctamente ejcutando el comando:
 
 ````
 \dv
-
 ````
 
-* Esto nos mostrará por pantalla el listado de vistas de nuestra base de datos:
+Esto nos mostrará por pantalla el listado de vistas de nuestra base de datos:
 
 ````
  Schema |             Name              | Type |  Owner   
@@ -738,10 +737,18 @@ AFTER INSERT ON film
 FOR EACH ROW
 EXECUTE FUNCTION log_film_insertion();
 ````
+* Para comprobar el funcionamiento bastará con ejeuctar: 
+````
+INSERT INTO film(title, description, release_year, language_id, rental_duration, rental_rate, length, replacement_cost, rating, last_update) VALUES ('Dune', 'A science fiction epic set on the desert planet Arrakis, featuring a young nobleman and his struggle for control.', 2024, 1, 7, 3.99, 155, 29.99, 'PG-13', CURRENT_TIMESTAMP);
+````
+* Mostraría por pantalla lo siguiente:
+````
+SELECT * FROM film_inserts_log;
+````
 
 ## 9. Disparador que almacena, en una nueva tabla, la fecha de los registros eliminados de `film`.
 
-* creamos una nueva tabla llamada `film_deletion_log` donde almacenaremos el `film_id` eliminada y la fecha en que se realizó la eliminación que se mostrará como `delete_at`.
+* Se crea una nueva tabla llamada `film_deletion_log` donde almacenaremos el `film_id` del registro eliminado y la fecha en que se realizó la eliminación que se mostrará como `delete_at`.
 ```
 CREATE TABLE film_deletion_log (
     film_id INTEGER NOT NULL,
@@ -837,17 +844,8 @@ SELECT * FROM film_deletion_log WHERE film_id = 1;
     1	     "2024-11-12 23:10:29.680953"
 ````
 
-Lo que mostraría las peliculas eliminadas. (Esta comprobación se hizo en otra base de datos de prueba ya que en el enunciado no se dice que se muestre su funcionamiento como tal)
-
 ## 10. Secuencias
-* Para ver el listado de secuecnias en nuestra base de datos utilizaremos el comando: 
-
-````
-\ds
-````
-
-Este nos mostrará por pantalla dicho resultado:
-
+* Para ver el listado de secuencias en nuestra base de datos: `\ds`
 ````
  Schema |            Name            |   Type   |  Owner   
 --------+----------------------------+----------+----------
@@ -867,12 +865,56 @@ Este nos mostrará por pantalla dicho resultado:
 
 (13 rows)
 ````
+* Para listarlas con más detalle: `SELECT * FROM pg_sequences;`
+````
+ schemaname |        sequencename        | sequenceowner | data_type | start_value | min_value |      max_value      | increment_by | cycle | cache_size | last_value 
+------------+----------------------------+---------------+-----------+-------------+-----------+---------------------+--------------+-------+------------+------------
+ public     | customer_customer_id_seq   | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |        599
+ public     | actor_actor_id_seq         | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |        200
+ public     | address_address_id_seq     | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |        605
+ public     | category_category_id_seq   | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |         16
+ public     | city_city_id_seq           | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |        600
+ public     | country_country_id_seq     | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |        109
+ public     | film_film_id_seq           | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |       1001
+ public     | inventory_inventory_id_seq | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |       4581
+ public     | language_language_id_seq   | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |          6
+ public     | payment_payment_id_seq     | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |      32098
+ public     | rental_rental_id_seq       | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |      16049
+ public     | staff_staff_id_seq         | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |          2
+ public     | store_store_id_seq         | postgres      | bigint    |           1 |         1 | 9223372036854775807 |            1 | f     |          1 |          2
+````
+* A continuación describiremos y detallaremos la relevancia de dichas secuencias:
+### `actor_actor_id_seq`
+* Esta secuencia genera valores únicos para la columna actor_id de la tabla actor.
+* La tabla actor almacena información sobre los actores de las películas. Cada actor debe tener un identificador único para facilitar su gestión y referencia en otras tablas. La secuencia `actor_actor_id_seq` asegura que cada actor tenga un actor_id único, lo cual es esencial para mantener la integridad de las relaciones y el seguimiento de los actores en la base de datos.
 
-* ### A continuación describiremos y detallaremos la relevancia de dichas secuencias:
+### `address_address_id_seq`
+* Esta secuencia genera valores únicos para la columna address_id de la tabla address.
+* La tabla address almacena las direcciones de los clientes, empleadas y tiendas. La secuencia `address_address_id_seq` asegura que cada dirección tenga un identificador único. Esto es importante porque las direcciones están asociadas a otras tablas como customer, staff y store.
+
+### `category_category_id_seq`
+* Esta secuencia genera valores únicos para la columna category_id de la tabla category.
+* La tabla category almacena las categorías de las películas . La secuencia `category_category_id_seq` asegura que cada categoría tenga un identificador único. Esto es útil para asociar películas a categorías de manera eficiente (a través de la tabla film_category).
+
+### `city_city_id_seq`
+* Esta secuencia genera valores únicos para la columna city_id de la tabla city. 
+* La tabla city almacena las ciudades de las direcciones de clientes, empleadas y tiendas. La secuencia `city_city_id_seq` garantiza que cada ciudad tenga un identificador único. 
+
+### `country_country_id_seq`
+* Esta secuencia genera valores únicos para la columna country_id de la tabla country.
+* La tabla country almacena información sobre los países. La secuencia `country_country_id_seq` asegura que cada país tenga un identificador único, lo que es útil para asociar direcciones (en la tabla address) y realizar un seguimiento preciso de las ubicaciones geográficas.
+
+### `customer_customer_id_seq`
+* Esta secuencia genera valores únicos para la columna customer_id de la tabla customer.
+* La tabla customer almacena información sobre los clientes que realizan alquileres. La secuencia customer_customer_id_seq garantiza que cada cliente tenga un identificador único, lo cual es esencial para hacer un seguimiento de las transacciones de alquiler y pago, y también para gestionar la relación del cliente con la tienda y las películas.
+
+### `film_film_id_seq`
+* Esta secuencia genera valores únicos para la columna film_id de la tabla film.
+*  La tabla film almacena información sobre las películas disponibles para alquiler. La secuencia `film_film_id_seq` asegura que cada película tenga un identificador único. Este identificador es crucial para asociar la película con otros registros en la base de datos.
 
 ### `inventory_inventory_id_seq`
 * Esta secuencia genera valores únicos para la columna inventory_id de la tabla inventory.
-* Cada registro en inventory representa una copia de una película en una tienda. La secuencia asegura que cada inventory_id sea único, lo cual es importante para identificar de manera exclusiva cada copia en el inventario. Esto es especialmente útil para el seguimiento y la gestión de existencias en diferentes ubicaciones.
+* Cada registro en inventory representa una copia de una película en una tienda. La secuencia asegura que cada `inventory_id` sea único, lo cual es importante para identificar de manera exclusiva cada copia en el inventario. Esto es especialmente útil para el seguimiento y la gestión de existencias en diferentes ubicaciones.
 
 ### `language_language_id_seq`
 * Esta secuencia genera valores únicos para la columna language_id de la tabla language.
@@ -893,7 +935,6 @@ Este nos mostrará por pantalla dicho resultado:
 ### `store_store_id_seq`
 * Esta secuencia genera valores únicos para la columna store_id de la tabla store.
 * La tabla store almacena información sobre las ubicaciones físicas de las tiendas. La secuencia `store_store_id_seq` asegura que cada tienda tenga un identificador único, lo cual es importante para gestionar el inventario y las transacciones en múltiples ubicaciones. Esto permite que la base de datos distinga entre varias tiendas, asociando de manera precisa cada transacción, inventario y empleado a una tienda específica.
-
 
 #### * Volcado final: `sudo -u postgres pg_dump -d db_prct04 > db_prct04.sql`
 
